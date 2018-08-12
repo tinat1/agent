@@ -9,7 +9,7 @@ from fmclient import Agent, OrderSide, Order, OrderType
 GROUP_MEMBERS = {"751965": "Huishan Feng", "830843": "Tina Tian", "790373": "Jennifer Lilian Tobagus"}
 
 # ------ Add a variable called DS_REWARD_CHARGE -----
-DS_REWARD_CHARGE = 
+DS_REWARD_CHARGE = 500 # To be set
 
 # Enum for the roles of the bot
 class Role(Enum):
