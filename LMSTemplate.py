@@ -1,5 +1,5 @@
 """
-This is a template for Project 1, Task 1 (Induced demand-supply)
+Project 1, Task 1 (Induced demand-supply)
 """
 
 from enum import Enum
@@ -9,7 +9,7 @@ from fmclient import Agent, OrderSide, Order, OrderType
 GROUP_MEMBERS = {"751965": "Huishan Feng", "830843": "Tina Tian", "790373": "Jennifer Lilian Tobagus"}
 
 # ------ Add a variable called DS_REWARD_CHARGE -----
-
+DS_REWARD_CHARGE = 
 
 # Enum for the roles of the bot
 class Role(Enum):
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     FM_ACCOUNT = "bullish-delight"
     FM_EMAIL = "h.feng4@student.unimelb.edu.au"
     FM_PASSWORD = "751965"
-    MARKETPLACE_ID = -1  # replace this with the marketplace id
+    MARKETPLACE_ID = 328  # replace this with the marketplace id
 
     ds_bot = DSBot(FM_ACCOUNT, FM_EMAIL, FM_PASSWORD, MARKETPLACE_ID)
     ds_bot.run()
