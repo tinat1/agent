@@ -35,6 +35,7 @@ class DSBot(Agent):
         return self._role
 
     def initialised(self):
+        self.inform("ok!")
         pass
 
     def order_accepted(self, order):
