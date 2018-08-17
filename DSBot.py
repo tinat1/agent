@@ -24,11 +24,15 @@ class BotType(Enum):
 
 class DSBot(Agent):
     # ------ Add an extra argument bot_type to the constructor -----
-    def __init__(self, account, email, password, marketplace_id):
-        super().__init__(account, email, password, marketplace_id, name="DSBot")
+    def __init__(self, account, email, password, marketplace_id, bot_type=Role.BUYER):
+        super().__init__(account, email, password, marketplace_id, bot_type=Role.BUYER, name="DSBot")
+        # I added the bot_type as an optional with a default setting
+        # just so the code won't kick us out for now when we run it
         self._waiting_for_server = False
         self._market_id = -1
         self._role = None
+        self._bot_type = bot_type
+        print(bot_type)
         # self._bot_type = bot_type
         # ------ Add new class variable _bot_type to store the type of the bot
         # In a session, the bot must be market maker or reactive (but not both)
@@ -62,6 +66,7 @@ class DSBot(Agent):
     def order_rejected(self, info, order):
         self._waiting_for_server = False
         self.inform("Your order was rejected!")
+
         # also I'm getting this error from time to time
         # then usually the agent will keep sending the same order and continue to get rejected
         # Couldn't parse response from server as JSON. Perhaps use a custom data parser if expecting response in different format
@@ -72,7 +77,6 @@ class DSBot(Agent):
             if item.mine and item.side == OrderSide.SELL:
                 have_an_order = True
                 self.inform("I have a pending sell order" + str(item))
-        print(have_an_order)
 
         if not have_an_order and not self._waiting_for_server:
             # need to be able to distinguish what the price of the best ask/bid is
@@ -100,8 +104,8 @@ class DSBot(Agent):
 
     def received_marketplace_info(self, marketplace_info):
         session_id = marketplace_info["session_id"]
-        print(marketplace_info)
-        if marketplace_info["status"]:
+        # print(marketplace_info)
+        if marketplace_info["active"]:
         # Jen's code had:
         # if marketplace_info["status"]:
         # why?
