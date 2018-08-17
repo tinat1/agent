@@ -1,5 +1,5 @@
 """
-This is a template for Project 1, Task 1 (Induced demand-supply) hello huish test test
+This is a template for Project 1, Task 1 (Induced demand-supply)
 """
 
 from enum import Enum
@@ -11,97 +11,105 @@ GROUP_MEMBERS = {"751965": "Huishan Feng", "830843": "Tina Tian", "790373": "Jen
 # ------ Add a variable called DS_REWARD_CHARGE -----
 DS_REWARD_CHARGE = 800
 
-
 # Enum for the roles of the bot
+# why Enum???
 class Role(Enum):
     BUYER = 0,
     SELLER = 1
-
-# for role in Role:
-#     if Role(role).name == "SELLER":
-#         print(role.value)
-
 
 # Let us define another enumeration to deal with the type of bot
 class BotType(Enum):
     MARKET_MAKER = 0,
     REACTIVE = 1
 
-print(BotType.MARKET_MAKER.value)
-
-
 class DSBot(Agent):
-
     # ------ Add an extra argument bot_type to the constructor -----
-    def __init__(self, account, email, password, marketplace_id, bot_type):
+    def __init__(self, account, email, password, marketplace_id):
         super().__init__(account, email, password, marketplace_id, name="DSBot")
+        self._waiting_for_server = False
         self._market_id = -1
         self._role = None
+        # self._bot_type = bot_type
         # ------ Add new class variable _bot_type to store the type of the bot
-        self._bot_type = bot_type
+        # In a session, the bot must be market maker or reactive (but not both)
+        # You should provide correct implementation for both types
 
     def role(self):
-        print("yes")
+        cash_info = self.holdings["cash"]
+        widgets_info = self.holdings["markets"][self._market_id]
+        self.inform(cash_info)
+        self.inform(widgets_info)
+
+        if self.cash_info['cash'] == 0:
+            self._role = Role.SELLER
+        else:
+            self._role = Role.BUYER
+
+        print(self._role)
         return self._role
 
     def initialised(self):
-        print(self.markets)
-        for market_id in self.markets.keys():
-            self._market_id = market_id
-            self.inform(self._market_id)
+        for market_id, market_info in self.markets.items():
+            self.inform("I can trade in market " + market_info["name"] + " with id " + str(market_id))
+            self.inform("The tick size is " + str(market_info["tick"]))
+            self.market_id = market_id #what is the point of this
 
-        # If the bot initially has positive cash, it is a buyer, otherwise, it is a seller
-        if self.holdings["cash"]["available_cash"] > 0:
-            self._role = Role.BUYER
-        else:
-            self._role = Role.SELLER
-
+# this whole section needs work vvv
     def order_accepted(self, order):
-        print("test")
-        self.inform("My order got accepted")
+        self._waiting_for_server = False
+        self.inform("Your order was accepted!")
 
     def order_rejected(self, info, order):
-        self.inform("My order got rejected because" + str(info))
+        self._waiting_for_server = False
+        self.inform("Your order was rejected!")
+        # also I'm getting this error from time to time
+        # then usually the agent will keep sending the same order and continue to get rejected
+        # Couldn't parse response from server as JSON. Perhaps use a custom data parser if expecting response in different format
 
     def received_order_book(self, order_book, market_id):
-        for order in order_book:
-            if order.mine:
-                self.inform("I have a pending order" + str(order))
-            else:
-                if order.side == OrderSide.SELL and order.price < 800:
-                    print("yes")
-                    order = Order(order.price, 1, OrderType.LIMIT, OrderSide.BUY,
-                                  self._market_id, ref="b1")
-                    print("order received at price " + str(order.price))
-                    self.send_order(order)
-                # if order.side == OrderSide.BUY and order.price > 100:
-                #     order = Order(order.price, 1, OrderType.LIMIT, OrderSide.SELL,
-                #                   self._market_id, ref="s1")
-                #     print("order received at price " + str(order.price))
-                #     self.send_order(order)
+        have_an_order = False
+        for item in order_book:
+            if item.mine and item.side == OrderSide.SELL:
+                have_an_order = True
+                self.inform("I have a pending sell order" + str(item))
+        print(have_an_order)
+
+        if not have_an_order and not self._waiting_for_server:
+            # need to be able to distinguish what the price of the best ask/bid is
+            # then set item price to that price, not the price of item currently examined
+            order = Order(item.price, 1, OrderType.LIMIT, OrderSide.BUY, market_id, ref="b1")
+            self.send_order(order)
+            self.inform("order sent at price " + str(order.price))
+            self._waiting_for_server = True
+# this whole section needs work ^^^
 
     def _print_trade_opportunity(self, other_order):
         self.inform("[" + str(self.role()) + str(other_order))
 
     def received_completed_orders(self, orders, market_id=None):
+        # must request through the get_completed_orders method
         pass
 
     def received_holdings(self, holdings):
-        cash_holdings = self.holdings["cash"]
-        print("Total cash: " + str(cash_holdings["cash"]) +
-              ", available cash: " + str(cash_holdings["available_cash"]))
-        for market_id, market_holding in self.holdings["markets"].items():
-            print("Total units: " + str(market_holding["units"]) +
-                  ", available units: " + str(market_holding["available_units"]))
+        cash_holdings = holdings["cash"]
+        self.inform("Total cash: " + st(cash_holdings["cash"]) + " available cash: " + st(cash_holdings["available_cash"]))
+        # is this necessary since we initialised cash_info above?
+
+        for market_id, market_holding in holdings["markets"].items():
+            self.inform("Total units: " + str(market_holding["units"]) + ", available units: " + str(market_holding["available_units"]))
 
     def received_marketplace_info(self, marketplace_info):
         session_id = marketplace_info["session_id"]
+        print(marketplace_info)
         if marketplace_info["status"]:
-            print("Marketplace is now open with session id: " + str(session_id))
-            # may want to check if holdings has changed when a marketplace re-opens
-            # market manager may decide to reallocate cash/units when the marketplace is closed
+        # Jen's code had:
+        # if marketplace_info["status"]:
+        # why?
+            self.inform("The marketplace is now open with session_id " + str(session_id))
         else:
-            print("Marketplace is now closed.")
+            self.inform("The marketplace is now closed")
+        # may want to check if your holdings have changed when the market reopens
+        # managers may decide to reallocate cash/units when the marketplace is closed
 
     def run(self):
         self.initialise()
@@ -110,9 +118,9 @@ class DSBot(Agent):
 
 if __name__ == "__main__":
     FM_ACCOUNT = "bullish-delight"
-    FM_EMAIL = "j.tobagus1@student.unimelb.edu.au"
-    FM_PASSWORD = "790373"
-    MARKETPLACE_ID = 352  # replace this with the marketplace id
+    FM_EMAIL = "t.tian3@student.unimelb.edu.au"
+    FM_PASSWORD = "830843"
+    MARKETPLACE_ID = 352
 
-    ds_bot = DSBot(FM_ACCOUNT, FM_EMAIL, FM_PASSWORD, MARKETPLACE_ID, BotType(1).name)
+    ds_bot = DSBot("bullish-delight", "t.tian3@student.unimelb.edu.au", "830843", 352)
     ds_bot.run()
